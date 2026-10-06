@@ -1,0 +1,9 @@
+# Python 3.12. Install with:  pip install -r requirements.txt
+# The extra index pulls the CUDA (NVIDIA GPU) builds of torch/torchvision.
+# Without it pip installs CPU-only torch, and training runs 10-50x slower.
+--extra-index-url https://download.pytorch.org/whl/cu124
+
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
+ultralytics==8.4.161
+opencv-python==5.0.0.93
