@@ -1,0 +1,25 @@
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Raw exported datasets are large and Roboflow is the source of truth for
+# them -- re-export instead of relying on git history for this.
+detection/data/
+detection/data_by_clip/
+
+# Ultralytics writes a lot (checkpoints, logs, sample images) per training
+# run here. Once you have a model worth keeping, copy just that .pt file
+# into detection/models/ (tracked) instead of committing this whole folder.
+detection/runs/
+
+# Video footage is too large for git -- share it via OneDrive/Drive instead.
+data/
+*.mp4
+*.mov
+*.avi
+
+# Model weights (base checkpoints re-download automatically; keep trained
+# models you care about somewhere intentional, not in git).
+weights/
+*.pt
