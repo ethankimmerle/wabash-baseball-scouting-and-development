@@ -11,8 +11,14 @@ USAGE:
     venv\\Scripts\\python.exe detection\\predict_video.py clip.mp4 --conf 0.1
     venv\\Scripts\\python.exe detection\\predict_video.py clip.mp4 --weights detection\\runs\\baseball_detector-2\\weights\\best.pt
 
-By default it uses the best.pt from the most recent training run. Output
-goes to detection/runs/predict/<clip name>_pred.mp4.
+By default it uses the best.pt from the most recent training run. Each model
+gets its own output folder, so results from different models never
+overwrite each other and can be compared side by side:
+
+    detection/runs/predict/<model run>/<clip>_conf<conf>.mp4
+    detection/runs/predict/<model run>/summary.csv   (one row per video run)
+
+e.g. runs/predict/baseball_detector-4/Gaskill_TEST_conf0.10.mp4
 
 WHAT --conf DOES:
     Every detection comes with a confidence score (0-1). Only boxes at or
@@ -22,6 +28,7 @@ WHAT --conf DOES:
 """
 
 import argparse
+import csv
 import glob
 import os
 
@@ -37,6 +44,15 @@ def latest_weights():
     if not candidates:
         raise FileNotFoundError("No trained model found under detection/runs/ -- run train.py first.")
     return max(candidates, key=os.path.getmtime)
+
+
+def model_name(weights):
+    """'runs/baseball_detector-4/weights/best.pt' -> 'baseball_detector-4'."""
+    weights = os.path.abspath(weights)
+    parent = os.path.dirname(weights)
+    if os.path.basename(parent) == "weights":
+        return os.path.basename(os.path.dirname(parent))
+    return os.path.splitext(os.path.basename(weights))[0]  # a .pt copied somewhere else
 
 
 def main():
@@ -60,9 +76,10 @@ def main():
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    os.makedirs(OUT_DIR, exist_ok=True)
+    out_dir = os.path.join(OUT_DIR, model_name(weights))
+    os.makedirs(out_dir, exist_ok=True)
     name = os.path.splitext(os.path.basename(args.video))[0]
-    out_path = os.path.join(OUT_DIR, f"{name}_pred.mp4")
+    out_path = os.path.join(out_dir, f"{name}_conf{args.conf:.2f}.mp4")
     writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
 
     frames = 0
@@ -98,6 +115,18 @@ def main():
         print(f"Confidence of drawn boxes: min {min(confidences):.2f}, max {max(confidences):.2f}, "
               f"mean {sum(confidences) / len(confidences):.2f}")
     print(f"Saved: {out_path}")
+
+    # One row per run, so models can be compared at a glance without
+    # rewatching every video.
+    summary = os.path.join(out_dir, "summary.csv")
+    new_file = not os.path.exists(summary)
+    with open(summary, "a", newline="") as f:
+        w = csv.writer(f)
+        if new_file:
+            w.writerow(["clip", "conf", "frames", "frames_with_detection", "max_conf", "mean_conf"])
+        w.writerow([name, args.conf, frames, frames_with_ball,
+                    f"{max(confidences):.2f}" if confidences else "",
+                    f"{sum(confidences) / len(confidences):.2f}" if confidences else ""])
 
 
 if __name__ == "__main__":

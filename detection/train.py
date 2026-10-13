@@ -90,6 +90,9 @@ def main():
         imgsz=IMAGE_SIZE,
         batch=BATCH,
         device=0,        # the GPU; training on CPU at 1280 would take forever
+        cache="ram",     # decode every image once and keep it in memory -- ~4x faster
+                         # epochs, since otherwise the GPU sits waiting on JPEG reads
+        workers=8,
         mosaic=1.0,      # stitch 4 images together -- more ball positions/scales per batch
         fliplr=0.5,      # mirror left/right (lefty vs righty pitchers)
         project=os.path.join(HERE, "runs"),
